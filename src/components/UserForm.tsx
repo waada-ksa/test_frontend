@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, CreateUserRequest } from '../types/User';
+import { CreateUserRequest } from '../types/User';
 import { config } from '../config';
 import './UserForm.css';
 
