@@ -1,4 +1,4 @@
-name: Test and Build
+name: Notify Team
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test-and-build:
+  notify:
     runs-on: ubuntu-latest
     
     steps:

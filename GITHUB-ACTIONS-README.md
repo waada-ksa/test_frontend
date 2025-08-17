@@ -4,17 +4,17 @@ This guide explains how to set up GitHub Actions for your React frontend applica
 
 ## 🚀 Workflows Overview
 
-### 1. **CI/CD Pipeline** (`.github/workflows/ci-cd.yml`)
+### 1. **Build Application** (`.github/workflows/ci-cd.yml`)
 - **Build and Test**: Runs linting, tests, and builds the application
 - **Docker Build**: Creates and pushes Docker images to GitHub Container Registry
 - **Deploy**: Deploys to development/production environments
 - **Slack Notifications**: Sends notifications for all stages
 
-### 2. **Docker Build and Notify** (`.github/workflows/docker-build.yml`)
+### 2. **Docker Build** (`.github/workflows/docker-build.yml`)
 - **Focused**: Only handles Docker image building and Slack notifications
 - **Efficient**: Faster execution for Docker-focused workflows
 
-### 3. **Test and Build** (`.github/workflows/test-build.yml`)
+### 3. **Notify Team** (`.github/workflows/test-build.yml`)
 - **Lightweight**: Only runs tests and builds the application
 - **Quick Feedback**: Fast execution for development feedback
 

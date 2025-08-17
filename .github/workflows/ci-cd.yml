@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Build Application
 
 on:
   push:
@@ -14,7 +14,7 @@ env:
 
 jobs:
   # Build and Test
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -48,7 +48,7 @@ jobs:
 
   # Docker Build and Push
   docker-build:
-    needs: build-and-test
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -153,7 +153,7 @@ jobs:
 
   # Notify on Failure
   notify-failure:
-    needs: [build-and-test, docker-build]
+    needs: [build, docker-build]
     runs-on: ubuntu-latest
     if: failure()
     
