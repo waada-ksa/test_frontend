@@ -3,6 +3,8 @@ import { CreateUserRequest } from '../types/User';
 import { config } from '../config';
 import './UserForm.css';
 
+// ESLint fix: Removed unused User import
+
 interface UserFormProps {
   onSubmit: (userData: CreateUserRequest) => void;
   isLoading?: boolean;
