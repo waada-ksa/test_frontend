@@ -153,55 +153,6 @@ jobs:
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  # Deploy to Development (on develop branch)
-  deploy-dev:
-    needs: [build, notify-team, docker-build]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop'
-    
-    steps:
-    - name: Deploy to development environment
-      run: |
-        echo "Deploying to development environment..."
-        # Add your deployment commands here
-        # Example: kubectl apply, docker-compose, etc.
-        
-    - name: Notify Slack - Development Deploy
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        channel: '#deployments'
-        text: '🚀 Development deployment successful!'
-        fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: always()
-
-  # Deploy to Production (on main branch)
-  deploy-prod:
-    needs: [build, notify-team, docker-build]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: production
-    
-    steps:
-    - name: Deploy to production environment
-      run: |
-        echo "Deploying to production environment..."
-        # Add your production deployment commands here
-        # Example: kubectl apply, docker-compose, etc.
-        
-    - name: Notify Slack - Production Deploy
-      uses: 8398a7/action-slack@v3
-      with:
-        status: success
-        channel: '#deployments'
-        text: '🚀 Production deployment successful!'
-        fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: always()
-
   # Notify on Failure
   notify-failure:
     needs: build
