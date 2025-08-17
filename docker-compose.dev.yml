@@ -1,0 +1,42 @@
+
+
+services:
+  # Frontend React Application (Development Mode)
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    volumes:
+      # Mount source code for hot reloading
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+    networks:
+      - app-network
+    command: npm start
+    restart: unless-stopped
+
+  # Backend API (Development Mode)
+  backend-dev:
+    image: mcr.microsoft.com/dotnet/aspnet:8.0
+    ports:
+      - "5246:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+    volumes:
+      # Mount your backend source code here
+      - ./backend:/app:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
