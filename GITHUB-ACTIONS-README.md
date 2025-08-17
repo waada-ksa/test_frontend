@@ -95,19 +95,45 @@ You can also run workflows manually:
 3. Click **Run workflow**
 4. Select branch and click **Run workflow**
 
-## 🔄 Independent Workflows
+## 🔄 Sequential Workflow Execution
 
-Each workflow is designed to run **completely independently**:
+The workflows now run in a **specific sequence** when triggered automatically:
 
-- **Build Application**: Can run without Docker Build or Notify Team
-- **Docker Build**: Can run without Build Application or Notify Team  
-- **Notify Team**: Can run without Build Application or Docker Build
+### **1. Build Application** → **2. Notify Team** → **3. Docker Build**
 
-This means you can:
-- **Run only Docker builds** when you just need new images
-- **Run only tests** when you want quick feedback
-- **Run the full pipeline** when you need everything
-- **Trigger workflows manually** based on your needs
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Build App     │───▶│  Notify Team    │───▶│  Docker Build   │
+│                 │    │                 │    │                 │
+│ ✅ Success      │    │ ✅ Success      │    │ ✅ Success      │
+│ ❌ Failure      │    │ ❌ Failure      │    │ ❌ Failure      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+       │                       │                       │
+       ▼                       ▼                       ▼
+   🔴 Stop if failed      📢 Team notification    🐳 Image created
+   ✅ Continue if success  📦 Build artifacts      🚀 Deploy ready
+```
+
+1. **Build Application** runs first:
+   - Builds and tests the application
+   - If successful, triggers the next workflows
+   - If failed, stops and sends failure notification
+
+2. **Notify Team** runs second (after successful build):
+   - Runs tests and builds again for verification
+   - Sends detailed status notifications to team
+   - Provides build artifacts for download
+
+3. **Docker Build** runs third (after successful build):
+   - Creates and pushes Docker images
+   - Tags images with commit SHA and branch names
+   - Sends deployment notifications
+
+### **Manual Execution**
+You can still run each workflow manually via `workflow_dispatch`:
+- **Individual workflows**: Run any workflow separately
+- **Full sequence**: Push to main/develop to trigger the complete sequence
+- **Custom triggers**: Run specific workflows based on your needs
 
 ## 🔍 Monitoring and Debugging
 

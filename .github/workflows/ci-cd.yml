@@ -7,10 +7,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   # Build and Test
   build:
@@ -45,63 +41,55 @@ jobs:
         path: build/
         retention-days: 7
 
-  # Docker Build and Push
-  docker-build:
+  # Trigger Notify Team workflow
+  trigger-notify:
+    needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      
+    if: success()
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
+    - name: Trigger Notify Team workflow
+      uses: actions/github-script@v7
       with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
+        script: |
+          await github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'test-build.yml',
+            ref: context.ref,
+            inputs: {
+              build_status: 'success',
+              commit_sha: context.sha,
+              branch: context.ref.replace('refs/heads/', '')
+            }
+          })
+
+  # Trigger Docker Build workflow
+  trigger-docker:
+    needs: build
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: Trigger Docker Build workflow
+      uses: actions/github-script@v7
       with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-          
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        
-    - name: Build and push development Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.dev
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        script: |
+          await github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'docker-build.yml',
+            ref: context.ref,
+            inputs: {
+              build_status: 'success',
+              commit_sha: context.sha,
+              branch: context.ref.replace('refs/heads/', '')
+            }
+          })
 
   # Deploy to Development (on develop branch)
   deploy-dev:
+    needs: [build, trigger-notify, trigger-docker]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     
@@ -125,6 +113,7 @@ jobs:
 
   # Deploy to Production (on main branch)
   deploy-prod:
+    needs: [build, trigger-notify, trigger-docker]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
@@ -149,6 +138,7 @@ jobs:
 
   # Notify on Failure
   notify-failure:
+    needs: build
     runs-on: ubuntu-latest
     if: failure()
     
@@ -158,7 +148,7 @@ jobs:
       with:
         status: failure
         channel: '#alerts'
-        text: '❌ Build or Docker build failed!'
+        text: '❌ Build failed!'
         fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

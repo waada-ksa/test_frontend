@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      build_status:
+        description: 'Status from Build Application workflow'
+        required: false
+        default: 'manual'
+      commit_sha:
+        description: 'Commit SHA from Build Application workflow'
+        required: false
+        default: ''
+      branch:
+        description: 'Branch from Build Application workflow'
+        required: false
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -62,7 +75,11 @@ jobs:
       with:
         status: success
         channel: '#deployments'
-        text: '✅ Docker images built and pushed successfully!'
+        text: |
+          ✅ Docker images built and pushed successfully!
+          📍 Branch: ${{ github.ref_name }}
+          🔗 Commit: ${{ github.sha }}
+          🚀 Triggered by: ${{ github.event.inputs.build_status || 'manual' }}
         fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -73,7 +90,11 @@ jobs:
       with:
         status: failure
         channel: '#alerts'
-        text: '❌ Docker build failed!'
+        text: |
+          ❌ Docker build failed!
+          📍 Branch: ${{ github.ref_name }}
+          🔗 Commit: ${{ github.sha }}
+          🚀 Triggered by: ${{ github.event.inputs.build_status || 'manual' }}
         fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
