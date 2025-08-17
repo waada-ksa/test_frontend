@@ -5,18 +5,22 @@ This guide explains how to set up GitHub Actions for your React frontend applica
 ## 🚀 Workflows Overview
 
 ### 1. **Build Application** (`.github/workflows/ci-cd.yml`)
-- **Build and Test**: Runs linting, tests, and builds the application
-- **Docker Build**: Creates and pushes Docker images to GitHub Container Registry
-- **Deploy**: Deploys to development/production environments
-- **Slack Notifications**: Sends notifications for all stages
+- **Complete CI/CD pipeline** with build, test, Docker, and deploy
+- **Multi-environment deployment** support (development and production)
+- **Comprehensive testing** and artifact management
+- **Independent workflow** - can run separately from others
 
 ### 2. **Docker Build** (`.github/workflows/docker-build.yml`)
-- **Focused**: Only handles Docker image building and Slack notifications
-- **Efficient**: Faster execution for Docker-focused workflows
+- **Focused workflow** specifically for Docker image building
+- **Automated tagging** with commit SHA and branch names
+- **Slack notifications** for build status
+- **Independent workflow** - can run separately from others
 
 ### 3. **Notify Team** (`.github/workflows/test-build.yml`)
-- **Lightweight**: Only runs tests and builds the application
-- **Quick Feedback**: Fast execution for development feedback
+- **Lightweight workflow** for quick feedback and team notifications
+- **Build artifacts** storage for 7 days
+- **Slack notifications** for team updates
+- **Independent workflow** - can run separately from others
 
 ## 🔧 Setup Instructions
 
@@ -81,9 +85,8 @@ Create these channels in your Slack workspace:
 ## 📋 Workflow Triggers
 
 ### Automatic Triggers
-- **Push to main/develop**: Triggers full CI/CD pipeline
-- **Pull Request to main**: Triggers build and test
-- **Release published**: Triggers production deployment
+- **Push to main/develop**: Triggers all workflows independently
+- **Pull Request to main**: Triggers all workflows independently
 
 ### Manual Triggers
 You can also run workflows manually:
@@ -91,6 +94,20 @@ You can also run workflows manually:
 2. Select the workflow you want to run
 3. Click **Run workflow**
 4. Select branch and click **Run workflow**
+
+## 🔄 Independent Workflows
+
+Each workflow is designed to run **completely independently**:
+
+- **Build Application**: Can run without Docker Build or Notify Team
+- **Docker Build**: Can run without Build Application or Notify Team  
+- **Notify Team**: Can run without Build Application or Docker Build
+
+This means you can:
+- **Run only Docker builds** when you just need new images
+- **Run only tests** when you want quick feedback
+- **Run the full pipeline** when you need everything
+- **Trigger workflows manually** based on your needs
 
 ## 🔍 Monitoring and Debugging
 

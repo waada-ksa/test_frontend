@@ -5,8 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [ published ]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -48,7 +47,6 @@ jobs:
 
   # Docker Build and Push
   docker-build:
-    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -104,7 +102,6 @@ jobs:
 
   # Deploy to Development (on develop branch)
   deploy-dev:
-    needs: docker-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     
@@ -128,7 +125,6 @@ jobs:
 
   # Deploy to Production (on main branch)
   deploy-prod:
-    needs: docker-build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     environment: production
@@ -153,7 +149,6 @@ jobs:
 
   # Notify on Failure
   notify-failure:
-    needs: [build, docker-build]
     runs-on: ubuntu-latest
     if: failure()
     
