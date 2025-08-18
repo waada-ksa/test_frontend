@@ -23,6 +23,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY || format('{0}/{1}', secrets.DOCKERHUB_USERNAME, github.event.repository.name) }}
 
 jobs:
   build:
@@ -45,7 +46,14 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
         
-    - name: Build and push production Docker image
+    - name: Log in to Docker Hub
+      if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+    - name: Build and push production Docker image (GHCR)
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -56,8 +64,21 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: Build and push production Docker image (Docker Hub)
+      if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ env.DOCKERHUB_REPOSITORY }}:latest
+          ${{ env.DOCKERHUB_REPOSITORY }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         
-    - name: Build and push development Docker image
+    - name: Build and push development Docker image (GHCR)
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -66,6 +87,19 @@ jobs:
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build and push development Docker image (Docker Hub)
+      if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.dev
+        push: true
+        tags: |
+          ${{ env.DOCKERHUB_REPOSITORY }}:dev
+          ${{ env.DOCKERHUB_REPOSITORY }}:dev-${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         
@@ -83,6 +117,30 @@ jobs:
         fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  update-test-branch:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update 'test' branch to this commit (force-with-lease)
+        run: |
+          set -e
+          CURRENT_SHA="${GITHUB_SHA}"
+          git fetch origin test || true
+          git push --force-with-lease origin "${CURRENT_SHA}:refs/heads/test"
         
     - name: Notify Slack - Failure
       uses: 8398a7/action-slack@v3
