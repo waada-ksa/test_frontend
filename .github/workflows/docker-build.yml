@@ -47,7 +47,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Log in to Docker Hub
-      if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -66,7 +66,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Build and push production Docker image (Docker Hub)
-      if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -91,7 +91,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Build and push development Docker image (Docker Hub)
-      if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+      if: ${{ secrets.DOCKERHUB_USERNAME && secrets.DOCKERHUB_TOKEN }}
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -136,11 +136,14 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Update 'test' branch to this commit (force-with-lease)
+        continue-on-error: true
         run: |
           set -e
           CURRENT_SHA="${GITHUB_SHA}"
           git fetch origin test || true
-          git push --force-with-lease origin "${CURRENT_SHA}:refs/heads/test"
+          if ! git push --force-with-lease origin "${CURRENT_SHA}:refs/heads/test"; then
+            echo "Warning: Could not update 'test' branch. It may be protected or diverged. Skipping."
+          fi
         
     - name: Notify Slack - Failure
       uses: 8398a7/action-slack@v3
